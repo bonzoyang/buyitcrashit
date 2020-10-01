@@ -1,0 +1,30 @@
+from django.db import models
+
+# Create your models here.
+
+class Description(models.Model):
+    title = models.TextField(null=True, blank=True)
+    summary = models.TextField(null=True, blank=True)
+    did = models.CharField(max_length=255)
+    description = models.TextField(null=True, blank=True)
+    spatialExtent = models.CharField(max_length=255)
+    dataFormat = models.TextField(null=True, blank=True)
+    temporalExtent = models.CharField(max_length=255)
+    temporalStart1 = models.DateTimeField(auto_now=False, auto_now_add=False)
+    temporalEnd1 = models.DateTimeField(auto_now=False, auto_now_add=False)
+    temporalStart2 = models.DateTimeField(auto_now=False, auto_now_add=False, null=True, blank=True)
+    temporalEnd2 = models.DateTimeField(auto_now=False, auto_now_add=False, null=True, blank=True)
+    temporalStart3 = models.DateTimeField(auto_now=False, auto_now_add=False, null=True, blank=True)
+    temporalEnd3 = models.DateTimeField(auto_now=False, auto_now_add=False, null=True, blank=True)
+    temporalStart4 = models.DateTimeField(auto_now=False, auto_now_add=False, null=True, blank=True)
+    temporalEnd4 = models.DateTimeField(auto_now=False, auto_now_add=False, null=True, blank=True)
+    temporalStart5 = models.DateTimeField(auto_now=False, auto_now_add=False, null=True, blank=True)
+    temporalEnd5 = models.DateTimeField(auto_now=False, auto_now_add=False, null=True, blank=True) 
+    Platform = models.TextField(null=True, blank=True)
+    DataCenter = models.TextField(null=True, blank=True)
+    Instrument = models.TextField(null=True, blank=True)
+    Version = models.FloatField(null=True, blank=True)
+    ScienceKeywords1 = models.TextField(null=True, blank=True)
+    ScienceKeywords2 = models.TextField(null=True, blank=True)
+    ScienceKeywords3 = models.TextField(null=True, blank=True)
+    ScienceKeywords4 = models.TextField(null=True, blank=True)
