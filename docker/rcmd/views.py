@@ -9,11 +9,16 @@ import json
 import pandas as pd
 import numpy as np
 import os
+import re
 import copy
+import pickle
 from collections import OrderedDict
 
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
+
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import linear_kernel
 
 
 # Create your views here.
@@ -246,39 +251,64 @@ def recommend_engine(vlist, slist, blist, mode = 'B', N=50):
 
     return rcmd
 
+index_to_id = pickle.load(open(f'{settings.BASE_DIR}/rcmd/index_to_id.pkl', 'rb'))
+dataset_wv_norm = pickle.load(open(f'{settings.BASE_DIR}/rcmd/dataset_wv_norm.pkl', 'rb'))
+wv = pickle.load(open(f'{settings.BASE_DIR}/rcmd/wordvector.pkl', 'rb'))
+
+def search_engine(keyword, N=50):
+    def row_major_vector_div_by_norm(rowvector):
+        rowvector_norm = np.sum(np.abs(rowvector)**2,axis=-1)**(1./2)
+        rowvector_norm = rowvector_norm.reshape((-1,1))
+        rowvector_norm = np.concatenate( [rowvector_norm]*rowvector.shape[1], axis=1)
+        rowvector = rowvector/rowvector_norm
+        return rowvector
+
+    punc_re = '[¿\<#í¯!°‐*�@;\\~\t•ﬂ\]½\}%¹$\)“""\(’≥μ\{\[″\xa0\u202f‘ˉ=ﬁ+±º"ó”?&—µ\xad\>,.²_\r^\n–ﬀ\|:/]'
+    url = r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’]))"
+
+    # keyword word vector
+    _ = re.sub(url, ' ', keyword)
+    _ = re.sub(punc_re, ' ', _)
+    _ = re.sub('  ', ' ', _)
+    _ = re.sub('  ', ' ', _)
+    _ = re.sub('  ', ' ', _)
+    keyword = re.sub('  ', ' ', _)
+    keywords = keyword.split(' ')
+
+    keyword_wv = [wv[kw].reshape((-1,1)) for kw in keywords  if kw in wv]
+    if not keyword_wv:
+        return []
+    keyword_wv = np.concatenate(keyword_wv, axis=1)
+    keyword_wv_norm = row_major_vector_div_by_norm(keyword_wv)
+
+    # cosine similarity
+    cos_similarity = dataset_wv_norm.dot(keyword_wv_norm).sum(axis=1)
+    cos_similarity = list(cos_similarity)
+    cos_similarity = [(index_to_id[i], _) for i, _ in enumerate(cos_similarity) if i in index_to_id]
+    cos_similarity = sorted(cos_similarity, key=lambda x: x[1], reverse=True)
+    rcmd = [ id for id, cos in cos_similarity[:N]] 
+
+    return rcmd
+
 @csrf_exempt
 def recommend(request):
-    print(type(request.body))
     rcv = json.loads(request.body)
-    print(f'get json from view, \njson: {rcv}')
-    mode = rcv['mode']
 
+    mode = rcv['mode']
     v = sorted(rcv['view'], key=lambda1, reverse=True)
     s = sorted(rcv['select'], key=lambda1, reverse=True)
     b = sorted(rcv['blog'], key=lambda1, reverse=True)
-    print(f'v:{v}\ns:{s}\nb:{b}')
 
     vids, vtimes = rx(rcv, 'view')
     sids, stimes = rx(rcv, 'select')
     bids, btimes = rx(rcv, 'blog')
-
-    print(f'vids:{vids}\nvtimes:{vtimes}')
-    print(f'sids:{sids}\nstimes:{stimes}')
-    print(f'bids:{sids}\nbtimes:{stimes}')
 
     # call recommantor
     vlist = [ (id, time) for id, time in zip(vids, vtimes) ]
     slist = [ (id, time) for id, time in zip(sids, stimes) ]
     blist = [ (id, time) for id, time in zip(bids, btimes) ]
     
-    print(f'vlist:{vlist}')
-    print(f'slist:{slist}')
-    print(f'blist:{blist}')
-
-    # fake recommend data
-    #rr = vids+sids+bids
     rr = recommend_engine(vlist=vlist, slist=slist, blist=blist,  mode = mode, N=20)
-    print(f'len of rr:{len(rr)}')
         
     res = '['
     for r in rr:
@@ -290,30 +320,10 @@ def recommend(request):
 
 @csrf_exempt
 def search(request):
-    print(type(request.body))
     rcv = json.loads(request.body)
-    print(f'get json from view, \njson: {rcv}')
-    mode = rcv['mode']
     keyword = rcv['keyword']
 
-    v = sorted(rcv['view'], key=lambda1, reverse=True)
-    s = sorted(rcv['select'], key=lambda1, reverse=True)
-    b = sorted(rcv['blog'], key=lambda1, reverse=True)
-    print(f'v:{v}\ns:{s}\nb:{b}')
-
-    vids, vtimes = rx(rcv, 'view')
-    sids, stimes = rx(rcv, 'select')
-    bids, btimes = rx(rcv, 'blog')
-
-    print(f'vids:{vids}\nvtimes:{vtimes}')
-    print(f'sids:{sids}\nstimes:{stimes}')
-    print(f'bids:{sids}\nbtimes:{stimes}')
-    
-
-
-    # fake recommend data
-    rr = vids+sids+bids
-    #rr = search_engine(keyword=keyword, mode='B', N=50)
+    rr = search_engine(keyword=keyword, N=20)
         
     res = '['
     for r in rr:
