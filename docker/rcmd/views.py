@@ -95,8 +95,8 @@ def remove_duplicate(l, n=-1):
     return picked
 
 # for recommend_engine()
-df_id = pd.read_csv(f'{settings.BASE_DIR}/rcmd/top_id.csv', index_col=0)
-df_score = pd.read_csv(f'{settings.BASE_DIR}/rcmd/top_scores.csv', index_col=0)
+df_id = pd.read_csv(f'{settings.BASE_DIR}/rcmd/top_ids_100.csv', index_col=0)
+df_score = pd.read_csv(f'{settings.BASE_DIR}/rcmd/top_scores_100.csv', index_col=0)
 
 def recommend_engine(vlist, slist, blist, mode = 'B', N=50):
     '''
@@ -294,7 +294,7 @@ def search(request):
     rcv = json.loads(request.body)
     print(f'get json from view, \njson: {rcv}')
     mode = rcv['mode']
-    search = rcv['keyword']
+    keyword = rcv['keyword']
 
     v = sorted(rcv['view'], key=lambda1, reverse=True)
     s = sorted(rcv['select'], key=lambda1, reverse=True)
@@ -313,6 +313,7 @@ def search(request):
 
     # fake recommend data
     rr = vids+sids+bids
+    #rr = search_engine(keyword=keyword, mode='B', N=50)
         
     res = '['
     for r in rr:
