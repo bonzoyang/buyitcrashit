@@ -179,21 +179,25 @@ def recommend_engine(vlist, slist, blist, mode = 'B', N=50):
         # top 3 recommend   
         top3 = []
         if vlist:
-            top3 = top3 + routine([vlist.pop(0)], [vw*top3_bonud], n=1)
+            top3 = top3 + routine([vlist.pop(0)], [vw*top3_bonud], n=-1)
         if slist:
-            top3 = top3 + routine([slist.pop(0)], [vw*top3_bonud], n=1)
+            top3 = top3 + routine([slist.pop(0)], [vw*top3_bonud], n=-1)
         if blist:
-            top3 = top3 + routine([blist.pop(0)], [vw*top3_bonud], n=1)
+            top3 = top3 + routine([blist.pop(0)], [vw*top3_bonud], n=-1)
         
         ################################################################
             
         # user recommend
         xlist = vlist + slist + blist
         aw = [vw]*len(vlist) + [sw]*len(slist) + [bw]*len(blist)
-        rcmd = routine(xlist, aw, -1)
-        
-        # take top N - 3 in rcmd, conbine with top3, then sort again
-        rcmd = top3 + remove_duplicate(rcmd, N-3)
+              
+        if xlist:
+            rcmd = routine(xlist, aw, -1)
+            # take top N - 3 in rcmd, conbine with top3, then sort again
+            rcmd = top3 + remove_duplicate(rcmd, N-3)
+        else:
+            rcmd = top3
+
         rcmd = sorted(rcmd, key=lambda x: x[1], reverse=True)
         rcmd = rcmd[:N]
         rcmd = [id for id, _ in rcmd]
@@ -207,30 +211,35 @@ def recommend_engine(vlist, slist, blist, mode = 'B', N=50):
         # top 3 recommend   
         top3 = []
         if vlist:
-            top3 = top3 + routine([vlist.pop(0)], [vw*top3_bonud], n=1)
+            top3 = top3 + routine([vlist.pop(0)], [vw*top3_bonud], n=-1)
         if slist:
-            top3 = top3 + routine([slist.pop(0)], [vw*top3_bonud], n=1)
+            top3 = top3 + routine([slist.pop(0)], [vw*top3_bonud], n=-1)
         if blist:
-            top3 = top3 + routine([blist.pop(0)], [vw*top3_bonud], n=1)
+            top3 = top3 + routine([blist.pop(0)], [vw*top3_bonud], n=-1)
         
         ################################################################
             
         # user recommend
         xlist = vlist + slist + blist
         aw = [vw]*len(vlist) + [sw]*len(slist) + [bw]*len(blist)
-        rcmd = routine(xlist, aw, -1)
-        # <-- same as mode 'B'
 
-        # sum all score
-        sumscore = {}
-        for id, scr in rcmd:
-            s = sumscore.get(id, 0) + scr
-            sumscore[id] = s
+        if xlist:
+            rcmd = routine(xlist, aw, -1)
+            # <-- same as mode 'B'
 
-        rcmd = sorted(sumscore.items(), key=lambda x: x[1], reverse=True)
+            # sum all score
+            sumscore = {}
+            for id, scr in rcmd:
+                s = sumscore.get(id, 0) + scr
+                sumscore[id] = s
+
+            rcmd = sorted(sumscore.items(), key=lambda x: x[1], reverse=True)
         
-        # take top N - 3 in rcmd, conbine with top3, then sort again
-        rcmd = top3 + remove_duplicate(rcmd, N-3)
+            # take top N - 3 in rcmd, conbine with top3, then sort again
+            rcmd = top3 + remove_duplicate(rcmd, N-3)
+        else:
+            rcmd = top3
+            
         rcmd = sorted(rcmd, key=lambda x: x[1], reverse=True)
         rcmd = rcmd[:N] 
         rcmd = [id for id, _ in rcmd]        
