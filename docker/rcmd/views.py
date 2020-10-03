@@ -12,7 +12,7 @@ import os
 import re
 import copy
 import pickle
-from collections import OrderedDict
+from collections import OrderedDict, Counter
 
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
@@ -290,14 +290,51 @@ def search_engine(keyword, N=50):
 
     return rcmd
 
+context = pickle.load(open("keyword.pkl", "rb"))
+word_to_keyword = context["word_to_keyword"]
+keyword_to_id = context["keyword_to_id"]
+
+def keyword_search(keywords, N=50):
+    '''
+    keywords: string containing keywords
+    global variables:
+        word_to_keyword: dictionary of set
+        keyword_to_id: dictionary of list
+    '''
+    _all = []
+    keywords = keywords.replace("/", " ")
+    for word in keywords.lower().split():
+        if word in word_to_keyword:
+            for kw in word_to_keyword[word]:
+                _all += keyword_to_id[kw]
+    counter = Counter(_all)
+    # print(counter.most_common(N))
+    return [e[0] for e in counter.most_common(N)]
+
+
+def default_recommend(N=50):
+    '''
+    global variables:
+        dict_keyword
+    '''
+    keywords = ["SPECTRAL/ENGINEERING","ATMOSPHERIC CHEMISTRY","OCEANS",
+"LAND SURFACE","BIOSPHERE","ATMOSPHERE"]
+    _all = []
+    for kw in keywords:
+        _all += dict_keyword[kw]
+    return random.sample(_all, N)
+
 @csrf_exempt
 def recommend(request):
     rcv = json.loads(request.body)
 
     mode = rcv['mode']
+
     v = sorted(rcv['view'], key=lambda1, reverse=True)
     s = sorted(rcv['select'], key=lambda1, reverse=True)
     b = sorted(rcv['blog'], key=lambda1, reverse=True)
+
+
 
     vids, vtimes = rx(rcv, 'view')
     sids, stimes = rx(rcv, 'select')
@@ -308,8 +345,12 @@ def recommend(request):
     slist = [ (id, time) for id, time in zip(sids, stimes) ]
     blist = [ (id, time) for id, time in zip(bids, btimes) ]
     
-    rr = recommend_engine(vlist=vlist, slist=slist, blist=blist,  mode = mode, N=20)
-        
+    if not v and not s and not b:
+        rr =  default_recommend(N=20)
+    else:
+        rr = recommend_engine(vlist=vlist, slist=slist, blist=blist,  mode = mode, N=20) 
+       
+    
     res = '{"data":['
     for r in rr:
         with open(f'{settings.BASE_DIR}/rcmd/json/{r}.json', 'r') as f:
@@ -323,7 +364,11 @@ def search(request):
     rcv = json.loads(request.body)
     keyword = rcv['keyword']
 
-    rr = search_engine(keyword=keyword, N=20)
+    if not keyword:
+        rr =  default_recommend(N=20)
+    else:
+        rr = keyword_search(keywords=keyword, N=20)
+        rr = rr + search_engine(keyword=keyword, N=20)
         
     res = '{"data":['
     for r in rr:
