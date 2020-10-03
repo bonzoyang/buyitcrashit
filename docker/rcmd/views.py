@@ -310,12 +310,12 @@ def recommend(request):
     
     rr = recommend_engine(vlist=vlist, slist=slist, blist=blist,  mode = mode, N=20)
         
-    res = '['
+    res = '{"data":['
     for r in rr:
         with open(f'{settings.BASE_DIR}/rcmd/json/{r}.json', 'r') as f:
             res = res + f.read() +', '
     else:
-        res = res + ']'
+        res = res + ']}'
     return HttpResponse(res, content_type="application/json")
 
 @csrf_exempt
@@ -325,10 +325,10 @@ def search(request):
 
     rr = search_engine(keyword=keyword, N=20)
         
-    res = '['
+    res = '{"data":['
     for r in rr:
         with open(f'{settings.BASE_DIR}/rcmd/json/{r}.json', 'r') as f:
             res = res + f.read() +', '
     else:
-        res = res + ']'
+        res = res + ']}'
     return HttpResponse(res, content_type="application/json")
