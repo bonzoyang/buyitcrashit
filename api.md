@@ -14,6 +14,8 @@
     {
       "mode": "B", 
       "keyword": "oxygen",
+      "start time": "1980-09-03 10:21:33",
+      "end time": "1981-01-11 07:21:34",
       "view": [
         {
           "id":"C179002853-ORNL_DAAC",
