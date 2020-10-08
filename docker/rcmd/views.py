@@ -12,6 +12,7 @@ import os
 import re
 import copy
 import pickle
+import random
 from collections import OrderedDict, Counter
 
 from django.conf import settings
@@ -315,13 +316,13 @@ def keyword_search(keywords, N=50):
 def default_recommend(N=50):
     '''
     global variables:
-        dict_keyword
+        keyword_to_id
     '''
-    keywords = ["SPECTRAL/ENGINEERING","ATMOSPHERIC CHEMISTRY","OCEANS",
-"LAND SURFACE","BIOSPHERE","ATMOSPHERE"]
+    keywords = ["spectral engineering","atmospheric chemistry","oceans",
+"land surface","biosphere","atmosphere"]
     _all = []
     for kw in keywords:
-        _all += dict_keyword[kw]
+        _all += keyword_to_id[kw]
     return random.sample(_all, N)
 
 @csrf_exempt
