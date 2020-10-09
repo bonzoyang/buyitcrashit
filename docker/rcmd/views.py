@@ -312,6 +312,50 @@ def keyword_search(keywords, N=50):
     # print(counter.most_common(N))
     return [e[0] for e in counter.most_common(N)]
 
+datetime_df = pd.read_pickle(f'{settings.BASE_DIR}/rcmd/datetime.pkl')
+def temporal_filter(time_start, time_end, idList):
+    TIME_MAX = pd.to_datetime("2262-01-01", format="%Y-%m-%d")
+    TIME_MIN = time_start = pd.to_datetime("1678-01-01", format="%Y-%m-%d")
+    
+    if not idList:
+        return []
+    time_start = pd.to_datetime(time_start, format="%Y-%m-%d", errors="coerce")
+    time_end = pd.to_datetime(time_end, format="%Y-%m-%d", errors="coerce")
+    if pd.isnull(time_start) and pd.isnull(time_end):
+        return idList
+    if pd.isnull(time_start):
+        time_start = TIME_MIN
+    if pd.isnull(time_end):
+        time_end = TIME_MAX
+    if time_start>time_end:
+        time_start = TIME_MIN
+        time_end = TIME_MAX
+        
+    idList = datetime_df.index.intersection(idList)
+    col_end = ["interval_1", "interval_3", "interval_5", "interval_7", "interval_9", "interval_11", "interval_13", "interval_15", "interval_17", "interval_19", "interval_21", "interval_23", "interval_25"]
+    col_start = ["interval_0", "interval_2", "interval_4", "interval_6", "interval_8", "interval_10", "interval_12", "interval_14", "interval_16", "interval_18", "interval_20", "interval_22", "interval_24"]
+    col_time = ["time_0", "time_1", "time_2", "time_3", "time_4", "time_5"]
+    condition_start = datetime_df.loc[idList, col_start]<=time_end
+    condition_end   = datetime_df.loc[idList, col_end]>=time_start
+    condition_time1 = datetime_df.loc[idList, col_time]<=time_end 
+    condition_time2 = datetime_df.loc[idList, col_time]>=time_start
+    condition_time = condition_time1 & condition_time2
+    condition_time["0001"] = condition_start["interval_0"] & condition_end["interval_1"]
+    condition_time["0203"] = condition_start["interval_2"] & condition_end["interval_3"]
+    condition_time["0405"] = condition_start["interval_4"] & condition_end["interval_5"]
+    condition_time["0607"] = condition_start["interval_6"] & condition_end["interval_7"]
+    condition_time["0809"] = condition_start["interval_8"] & condition_end["interval_9"]
+    condition_time["1011"] = condition_start["interval_10"] & condition_end["interval_11"]
+    condition_time["1213"] = condition_start["interval_12"] & condition_end["interval_13"]
+    condition_time["1415"] = condition_start["interval_14"] & condition_end["interval_15"]
+    condition_time["1617"] = condition_start["interval_16"] & condition_end["interval_17"]
+    condition_time["1819"] = condition_start["interval_18"] & condition_end["interval_19"]
+    condition_time["2021"] = condition_start["interval_20"] & condition_end["interval_21"]
+    condition_time["2223"] = condition_start["interval_22"] & condition_end["interval_23"]
+    condition_time["2425"] = condition_start["interval_24"] & condition_end["interval_25"]
+    condition_time = condition_time.any(axis="columns")
+    ret = condition_time.index[condition_time[:]]
+    return ret
 
 def default_recommend(N=50):
     '''
@@ -364,17 +408,30 @@ def recommend(request):
 def search(request):
     rcv = json.loads(request.body)
     keyword = rcv['keyword']
+    start_time = rcv['start_time']
+    end_time = rcv['end_time']
 
-    if not keyword:
-        rr =  default_recommend(N=20)
-    else:
-        rr = keyword_search(keywords=keyword, N=20)
-        rr = rr + search_engine(keyword=keyword, N=20)
+    # - search datasets in any time interval - #
+    if not start_time and not end_time: 
+        if not keyword:
+            rr =  default_recommend(N=20)
+        else:
+            rr = keyword_search(keywords=keyword, N=20)
+            rr = rr + search_engine(keyword=keyword, N=20)
+    # - search datasets in specify time interval - #
+    else:                               
+        if not keyword:
+            rr =  default_recommend(N=100)
+        else:
+            rr = keyword_search(keywords=keyword, N=50)
+            rr = rr + search_engine(keyword=keyword, N=50)
+        rr = temporal_filter(start_time, end_time, rr)
+    rr = rr[:20]
     
-    res = {"data":[]}
+    res = {'data':[]}
     for r in rr:
         with open(f'{settings.BASE_DIR}/rcmd/json/{r}.json', 'r') as f:
-            res["data"].append( json.load(f) )
+            res['data'].append( json.load(f) )
     res = json.dumps(res)
     
     return HttpResponse(res, content_type="application/json")
