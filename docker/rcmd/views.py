@@ -315,8 +315,8 @@ def keyword_search(keywords, N=50):
 datetime_df = pd.read_pickle(f'{settings.BASE_DIR}/rcmd/datetime.pkl')
 def temporal_filter(time_start, time_end, idList):
     TIME_MAX = pd.to_datetime("2262-01-01", format="%Y-%m-%d")
-    TIME_MIN = time_start = pd.to_datetime("1678-01-01", format="%Y-%m-%d")
-    
+    TIME_MIN = pd.to_datetime("1678-01-01", format="%Y-%m-%d")
+
     if not idList:
         return []
     time_start = pd.to_datetime(time_start, format="%Y-%m-%d", errors="coerce")
@@ -330,7 +330,7 @@ def temporal_filter(time_start, time_end, idList):
     if time_start>time_end:
         time_start = TIME_MIN
         time_end = TIME_MAX
-        
+
     idList = datetime_df.index.intersection(idList)
     col_end = ["interval_1", "interval_3", "interval_5", "interval_7", "interval_9", "interval_11", "interval_13", "interval_15", "interval_17", "interval_19", "interval_21", "interval_23", "interval_25"]
     col_start = ["interval_0", "interval_2", "interval_4", "interval_6", "interval_8", "interval_10", "interval_12", "interval_14", "interval_16", "interval_18", "interval_20", "interval_22", "interval_24"]
