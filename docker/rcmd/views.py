@@ -3,7 +3,7 @@ from django.template.loader import get_template
 from django.http import HttpResponse
 from .models import *
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
 import json
 import pandas as pd
@@ -13,6 +13,7 @@ import re
 import copy
 import pickle
 import random
+from dateparser.search import search_dates
 from collections import OrderedDict, Counter
 
 from django.conf import settings
@@ -355,7 +356,34 @@ def temporal_filter(time_start, time_end, idList):
     condition_time["2425"] = condition_start["interval_24"] & condition_end["interval_25"]
     condition_time = condition_time.any(axis="columns")
     ret = condition_time.index[condition_time[:]]
-    return ret
+    return list(ret)
+
+def extract_year(text):
+    dates = search_dates(text)
+    if not dates:
+        return []
+    filtered_dates = set()
+    for e in dates:
+        kwords = e[:-1]
+        date = e[-1]
+        for kw in kwords:
+            if kw[:4].isdigit() and len(kw)>=4:
+                filtered_dates.add(date)
+    return list(filtered_dates)
+
+def auto_time_detection(text, idList, N=3):
+    if not text or not idList:
+        return []
+    ret = set()
+    filtered_dates = extract_year(text)
+    for date in filtered_dates[:N]:
+        TEN_YEARS = timedelta(days=3650)
+        time_start = date - TEN_YEARS
+        time_end = date + TEN_YEARS
+        time_start = time_start.strftime("%Y-%m-%d")
+        time_end = time_end.strftime("%Y-%m-%d")
+        ret = ret.union( set(temporal_filter(time_start, time_end, idList)) )
+    return list(ret)
 
 def default_recommend(N=50):
     '''
@@ -428,10 +456,14 @@ def search(request):
         rr = temporal_filter(start_time, end_time, rr)
     rr = rr[:20]
     
+    smart_id = auto_time_detection(keyword, rr)
+
     res = {'data':[]}
     for r in rr:
         with open(f'{settings.BASE_DIR}/rcmd/json/{r}.json', 'r') as f:
-            res['data'].append( json.load(f) )
+            js = json.load(f)
+        js["smart"] = 1 if r in smart_id else 0             
+        res['data'].append( js )
     res = json.dumps(res)
     
     return HttpResponse(res, content_type="application/json")
