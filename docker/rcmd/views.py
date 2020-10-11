@@ -364,9 +364,10 @@ def extract_year(text):
         return []
     filtered_dates = set()
     for e in dates:
-        kwords = e[:-1]
-        date = e[-1]
+        kwords = e[0].split(",")
+        date = e[1]
         for kw in kwords:
+            kw = kw.rstrip().lstrip()
             if kw[:4].isdigit() and len(kw)>=4:
                 filtered_dates.add(date)
     return list(filtered_dates)
